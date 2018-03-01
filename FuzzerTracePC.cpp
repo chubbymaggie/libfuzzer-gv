@@ -318,14 +318,23 @@ void TracePC::HandleCmp(uintptr_t PC, T Arg1, T Arg2) {
 } // namespace fuzzer
 
 static void getStackDepth(void) {
+  static bool stackUnique = fuzzer::TPC.StackUniqueGuidedEnabled();
+  static bool stackDepth = fuzzer::TPC.StackDepthGuidedEnabled();
+  if ( stackUnique == false && stackDepth == false ) {
+      return;
+  }
   size_t p;
   asm("movq %%rsp,%0" : "=r"(p));
-  fuzzer::stackUnique.insert(p);
-  p = 0x8000000000000000 - p;
-  if (p > fuzzer::stackDepthRecord) {
-      fuzzer::stackDepthRecord = p;
-      if (fuzzer::stackDepthBase == 0) {
-          fuzzer::stackDepthBase = p;
+  if ( stackUnique == true ) {
+      fuzzer::stackUnique.insert(p);
+  }
+  if ( stackDepth == true ) {
+      p = 0x8000000000000000 - p;
+      if (p > fuzzer::stackDepthRecord) {
+          fuzzer::stackDepthRecord = p;
+          if (fuzzer::stackDepthBase == 0) {
+              fuzzer::stackDepthBase = p;
+          }
       }
   }
 }

@@ -119,6 +119,8 @@ class TracePC {
   void SetUseValueProfile(bool VP) { UseValueProfile = VP; }
   void SetStackDepthGuided(bool SD) { StackDepthGuided = SD; }
   void SetStackUniqueGuided(bool SD) { StackUniqueGuided = SD; }
+  bool StackDepthGuidedEnabled(void) { return StackDepthGuided; }
+  bool StackUniqueGuidedEnabled(void) { return StackUniqueGuided; }
   void SetIntensityGuided(bool I) { IntensityGuided = I; }
   void SetAllocGuided(bool A) { AllocGuided = A; }
   void SetCustomGuided(bool I) { CustomGuided = I; }
