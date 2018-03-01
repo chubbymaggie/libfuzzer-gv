@@ -66,6 +66,8 @@ FUZZER_FLAG_INT(use_value_profile, 0,
                 "Experimental. Use value profile to guide fuzzing.")
 FUZZER_FLAG_INT(stack_depth_guided, 0,
                 "Experimental. Use stack depth to guide fuzzing.")
+FUZZER_FLAG_INT(stack_unique_guided, 0,
+                "Experimental. Use # unique stack pointers to guide fuzzing.")
 FUZZER_FLAG_INT(alloc_guided, 0,
                 "Experimental. Use heap allocation size to guide fuzzing.")
 FUZZER_FLAG_INT(custom_guided, 0,

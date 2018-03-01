@@ -259,6 +259,7 @@ Fuzzer::Fuzzer(UserCallback CB, InputCorpus &Corpus, MutationDispatcher &MD,
   TPC.SetUseCounters(Options.UseCounters);
   TPC.SetUseValueProfile(Options.UseValueProfile);
   TPC.SetStackDepthGuided(Options.StackDepthGuided);
+  TPC.SetStackUniqueGuided(Options.StackUniqueGuided);
   TPC.SetIntensityGuided(Options.IntensityGuided);
   TPC.SetAllocGuided(Options.AllocGuided);
   TPC.SetCustomGuided(Options.CustomGuided);
@@ -406,6 +407,8 @@ void Fuzzer::PrintStats(const char *Where, const char *End, size_t Units) {
     Printf(" cov: %zd", N);
   if (size_t N = TPC.GetStackDepthRecord())
       Printf(" st: %zdK", N / 1000);
+  if (size_t N = TPC.GetStackUniqueRecord())
+      Printf(" su: %zdK", N / 1000);
   if (size_t N = TPC.GetCodeIntensityRecord())
       Printf(" ci: %zdK", N / 1000);
   if (Options.AllocGuided)

@@ -78,6 +78,7 @@ class TracePC {
   template <class T> void HandleCmp(uintptr_t PC, T Arg1, T Arg2);
   size_t GetTotalPCCoverage();
   const size_t GetStackDepthRecord() const;
+  const size_t GetStackUniqueRecord() const;
   const size_t GetCodeIntensity() const;
   void ResetCodeIntensity();
   void UpdateCodeIntensityRecord(size_t ci) {
@@ -117,6 +118,7 @@ class TracePC {
   void SetUseCounters(bool UC) { UseCounters = UC; }
   void SetUseValueProfile(bool VP) { UseValueProfile = VP; }
   void SetStackDepthGuided(bool SD) { StackDepthGuided = SD; }
+  void SetStackUniqueGuided(bool SD) { StackUniqueGuided = SD; }
   void SetIntensityGuided(bool I) { IntensityGuided = I; }
   void SetAllocGuided(bool A) { AllocGuided = A; }
   void SetCustomGuided(bool I) { CustomGuided = I; }
@@ -162,6 +164,7 @@ private:
   bool UseCounters = false;
   bool UseValueProfile = false;
   bool StackDepthGuided = false;
+  bool StackUniqueGuided = false;
   bool IntensityGuided = false;
   bool AllocGuided = false;
   bool CustomGuided = false;
@@ -258,6 +261,10 @@ void TracePC::CollectFeatures(Callback HandleFeature) const {
 
   if (StackDepthGuided) {
       HandleFeature(GetStackDepthRecord());
+  }
+
+  if (StackUniqueGuided) {
+      HandleFeature(GetStackUniqueRecord());
   }
 
   if (IntensityGuided) {
