@@ -406,9 +406,9 @@ void Fuzzer::PrintStats(const char *Where, const char *End, size_t Units) {
   if (size_t N = TPC.GetTotalPCCoverage())
     Printf(" cov: %zd", N);
   if (size_t N = TPC.GetStackDepthRecord())
-      Printf(" st: %zdK", N / 1000);
+      Printf(" st: %zdK", N);
   if (size_t N = TPC.GetStackUniqueRecord())
-      Printf(" su: %zdK", N / 1000);
+      Printf(" su: %zdK", N);
   if (size_t N = TPC.GetCodeIntensityRecord())
       Printf(" ci: %zdK", N / 1000);
   if (Options.AllocGuided)
