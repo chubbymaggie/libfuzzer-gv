@@ -318,8 +318,8 @@ void TracePC::HandleCmp(uintptr_t PC, T Arg1, T Arg2) {
 } // namespace fuzzer
 
 static void getStackDepth(void) {
-  static bool stackUnique = fuzzer::TPC.StackUniqueGuidedEnabled();
-  static bool stackDepth = fuzzer::TPC.StackDepthGuidedEnabled();
+  bool stackUnique = fuzzer::TPC.StackUniqueGuidedEnabled();
+  bool stackDepth = fuzzer::TPC.StackDepthGuidedEnabled();
   if ( stackUnique == false && stackDepth == false ) {
       return;
   }
