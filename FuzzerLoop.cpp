@@ -634,7 +634,6 @@ void Fuzzer::ExecuteCallback(const uint8_t *Data, size_t Size) {
       TPC.UpdateCustomRecord(Res);
   } else {
       (void)Res;
-      assert(Res == 0);
   }
   HasMoreMallocsThanFrees = AllocTracer.Stop();
   if (!LooseMemeq(DataCopy, Data, Size))
