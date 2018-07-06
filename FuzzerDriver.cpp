@@ -572,6 +572,7 @@ int FuzzerDriver(int *argc, char ***argv, UserCallback Callback) {
   Options.UseCmp = Flags.use_cmp;
   Options.UseValueProfile = Flags.use_value_profile;
   Options.StackDepthGuided = Flags.stack_depth_guided;
+  Options.StackUniqueGuided = Flags.stack_unique_guided;
   Options.IntensityGuided = Flags.intensity_guided;
   Options.AllocGuided = Flags.alloc_guided;
   Options.CustomGuided = Flags.custom_guided;
@@ -699,6 +700,7 @@ int FuzzerDriver(int *argc, char ***argv, UserCallback Callback) {
   }
 
   if (Flags.merge) {
+      TPC.SetMerge();
     if (Options.MaxLen == 0)
       F->SetMaxInputLen(kMaxSaneLen);
     if (Flags.merge_control_file)

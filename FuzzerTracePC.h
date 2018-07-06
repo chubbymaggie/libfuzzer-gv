@@ -17,6 +17,7 @@
 #include "FuzzerValueBitMap.h"
 
 #include <set>
+#include <map>
 
 namespace fuzzer {
 
@@ -45,11 +46,31 @@ struct TableOfRecentCompares {
   Pair Table[kSize];
 };
 
+class CustomValue {
+    size_t MaxVal;
+
+    public:
+    CustomValue(void) :
+        MaxVal(0) {}
+
+    void Update(size_t newval) {
+        if ( newval > MaxVal ) {
+            printf("update from %zu to %zu\n", MaxVal, newval);
+            MaxVal = newval;
+        }
+    }
+
+    size_t GetMax(void) const {
+        return MaxVal;
+    }
+};
+
 class TracePC {
  public:
   static const size_t kNumPCs = 1 << 21;
   // How many bits of PC are used from __sanitizer_cov_trace_pc.
   static const size_t kTracePcBits = 18;
+  bool merge = false;
 
   void HandleInit(uint32_t *Start, uint32_t *Stop);
   void HandleInline8bitCountersInit(uint8_t *Start, uint8_t *Stop);
@@ -57,6 +78,7 @@ class TracePC {
   template <class T> void HandleCmp(uintptr_t PC, T Arg1, T Arg2);
   size_t GetTotalPCCoverage();
   const size_t GetStackDepthRecord() const;
+  const size_t GetStackUniqueRecord() const;
   const size_t GetCodeIntensity() const;
   void ResetCodeIntensity();
   void UpdateCodeIntensityRecord(size_t ci) {
@@ -68,11 +90,27 @@ class TracePC {
   void UpdateAllocRecord(size_t _allocRecord) {
       allocRecord = _allocRecord;
   }
+  void UpdateCustomValues(std::vector<std::pair<size_t, size_t>> *customValues) {
+      for ( auto &curVal : *customValues ) {
+          CustomValue cv;
+          localCustomValues.insert(
+                  std::pair<size_t, CustomValue>(curVal.first, cv) );
+          localCustomValues[curVal.first].Update(curVal.second);
+      }
+
+  }
+  void SetMerge(void) {
+      merge = true;
+  }
   void UpdateCustomRecord(int Res) {
       if (Res < 0) {
           return;
       }
-      if (Res > customRecord) {
+      if ( merge == false ) {
+          if ( Res > customRecord ) {
+              customRecord = (size_t)Res;
+          }
+      } else {
           customRecord = (size_t)Res;
       }
   }
@@ -80,9 +118,14 @@ class TracePC {
   void SetUseCounters(bool UC) { UseCounters = UC; }
   void SetUseValueProfile(bool VP) { UseValueProfile = VP; }
   void SetStackDepthGuided(bool SD) { StackDepthGuided = SD; }
+  void SetStackUniqueGuided(bool SD) { StackUniqueGuided = SD; }
+  bool StackDepthGuidedEnabled(void) { return StackDepthGuided; }
+  bool StackUniqueGuidedEnabled(void) { return StackUniqueGuided; }
   void SetIntensityGuided(bool I) { IntensityGuided = I; }
   void SetAllocGuided(bool A) { AllocGuided = A; }
   void SetCustomGuided(bool I) { CustomGuided = I; }
+  void SetCustomFuncGuided(bool C) { CustomFuncGuided = C; }
+  bool IsCustomFuncGuided(void) { return CustomFuncGuided;}
   void SetNoCoverageGuided(bool C) { NoCoverageGuided = C; }
   void SetPrintNewPCs(bool P) { DoPrintNewPCs = P; }
   template <class Callback> void CollectFeatures(Callback CB) const;
@@ -123,9 +166,11 @@ private:
   bool UseCounters = false;
   bool UseValueProfile = false;
   bool StackDepthGuided = false;
+  bool StackUniqueGuided = false;
   bool IntensityGuided = false;
   bool AllocGuided = false;
   bool CustomGuided = false;
+  bool CustomFuncGuided = false;
   bool NoCoverageGuided = false;
   bool DoPrintNewPCs = false;
 
@@ -150,6 +195,7 @@ private:
   size_t codeIntensityRecord;
   size_t allocRecord = 0;
   size_t customRecord;
+  std::map<size_t, CustomValue> localCustomValues;
 };
 
 template <class Callback> // void Callback(size_t Idx, uint8_t Value);
@@ -219,6 +265,10 @@ void TracePC::CollectFeatures(Callback HandleFeature) const {
       HandleFeature(GetStackDepthRecord());
   }
 
+  if (StackUniqueGuided) {
+      HandleFeature(GetStackUniqueRecord());
+  }
+
   if (IntensityGuided) {
       HandleFeature(codeIntensityRecord);
   }
@@ -229,6 +279,12 @@ void TracePC::CollectFeatures(Callback HandleFeature) const {
 
   if (CustomGuided) {
       HandleFeature(customRecord);
+  }
+
+  if (CustomFuncGuided) {
+      for (auto &curVal : localCustomValues) {
+          HandleFeature( curVal.second.GetMax() );
+      }
   }
 }
 

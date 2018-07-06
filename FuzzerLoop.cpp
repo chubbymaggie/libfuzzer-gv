@@ -50,6 +50,15 @@ SharedMemoryRegion SMR;
 // Only one Fuzzer per process.
 static Fuzzer *F;
 
+std::vector<std::pair<size_t, size_t>>* customValues = NULL;
+void RecordCustomGuidance(size_t Id, size_t Val, bool Direction) {
+    if ( Direction == false ) {
+        /* Invert */
+        Val = ((size_t)-1) - Val;
+    }
+    customValues->push_back( std::pair<size_t, size_t>(Id, Val) );
+}
+
 // Leak detection is expensive, so we first check if there were more mallocs
 // than frees (using the sanitizer malloc hooks) and only then try to call lsan.
 struct MallocFreeTracer {
@@ -250,9 +259,19 @@ Fuzzer::Fuzzer(UserCallback CB, InputCorpus &Corpus, MutationDispatcher &MD,
   TPC.SetUseCounters(Options.UseCounters);
   TPC.SetUseValueProfile(Options.UseValueProfile);
   TPC.SetStackDepthGuided(Options.StackDepthGuided);
+  TPC.SetStackUniqueGuided(Options.StackUniqueGuided);
   TPC.SetIntensityGuided(Options.IntensityGuided);
   TPC.SetAllocGuided(Options.AllocGuided);
   TPC.SetCustomGuided(Options.CustomGuided);
+
+  if ( EF->LLVMFuzzerCustomGuidance ) {
+      customValues = new std::vector<std::pair<size_t, size_t>>;
+      EF->LLVMFuzzerCustomGuidance(RecordCustomGuidance);
+      TPC.SetCustomFuncGuided(true);
+  } else {
+      TPC.SetCustomFuncGuided(false);
+  }
+
   TPC.SetNoCoverageGuided(Options.NoCoverageGuided);
   TPC.SetPrintNewPCs(Options.PrintNewCovPcs);
 
@@ -387,7 +406,9 @@ void Fuzzer::PrintStats(const char *Where, const char *End, size_t Units) {
   if (size_t N = TPC.GetTotalPCCoverage())
     Printf(" cov: %zd", N);
   if (size_t N = TPC.GetStackDepthRecord())
-      Printf(" st: %zdK", N / 1000);
+      Printf(" st: %zd", N);
+  if (size_t N = TPC.GetStackUniqueRecord())
+      Printf(" su: %zd", N);
   if (size_t N = TPC.GetCodeIntensityRecord())
       Printf(" ci: %zdK", N / 1000);
   if (Options.AllocGuided)
@@ -594,6 +615,8 @@ void Fuzzer::ExecuteCallback(const uint8_t *Data, size_t Size) {
   CurrentUnitSize = Size;
   if (Options.AllocGuided)
       allocationTracker->reset();
+  if (TPC.IsCustomFuncGuided())
+      customValues->clear();
   AllocTracer.Start(Options.TraceMalloc);
   UnitStartTime = system_clock::now();
   TPC.ResetMaps();
@@ -605,11 +628,12 @@ void Fuzzer::ExecuteCallback(const uint8_t *Data, size_t Size) {
       allocationTracker->calcMax();
       TPC.UpdateAllocRecord(allocationTracker->getMax());
   }
+  if (TPC.IsCustomFuncGuided())
+      TPC.UpdateCustomValues(customValues);
   if (Options.CustomGuided) {
       TPC.UpdateCustomRecord(Res);
   } else {
       (void)Res;
-      assert(Res == 0);
   }
   HasMoreMallocsThanFrees = AllocTracer.Stop();
   if (!LooseMemeq(DataCopy, Data, Size))

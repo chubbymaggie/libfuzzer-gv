@@ -32,6 +32,7 @@ struct FuzzingOptions {
   bool UseCmp = false;
   bool UseValueProfile = false;
   bool StackDepthGuided = false;
+  bool StackUniqueGuided = false;
   bool IntensityGuided = false;
   bool AllocGuided = false;
   bool CustomGuided = false;

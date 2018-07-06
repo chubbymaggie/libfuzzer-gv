@@ -36,6 +36,7 @@ uintptr_t __sancov_trace_pc_pcs[fuzzer::TracePC::kNumPCs];
 
 namespace fuzzer {
 
+std::set<size_t> stackUnique;
 size_t codeIntensity = 0, stackDepthBase = 0, stackDepthRecord = 0;
 
 TracePC TPC;
@@ -61,6 +62,10 @@ const size_t TracePC::GetStackDepthRecord() const {
         return 0;
     }
     return fuzzer::stackDepthRecord - fuzzer::stackDepthBase;
+}
+
+const size_t TracePC::GetStackUniqueRecord() const {
+    return fuzzer::stackUnique.size();
 }
 
 const size_t TracePC::GetCodeIntensity() const {
@@ -313,13 +318,23 @@ void TracePC::HandleCmp(uintptr_t PC, T Arg1, T Arg2) {
 } // namespace fuzzer
 
 static void getStackDepth(void) {
+  bool stackUnique = fuzzer::TPC.StackUniqueGuidedEnabled();
+  bool stackDepth = fuzzer::TPC.StackDepthGuidedEnabled();
+  if ( stackUnique == false && stackDepth == false ) {
+      return;
+  }
   size_t p;
   asm("movq %%rsp,%0" : "=r"(p));
-  p = 0x8000000000000000 - p;
-  if (p > fuzzer::stackDepthRecord) {
-      fuzzer::stackDepthRecord = p;
-      if (fuzzer::stackDepthBase == 0) {
-          fuzzer::stackDepthBase = p;
+  if ( stackUnique == true ) {
+      fuzzer::stackUnique.insert(p);
+  }
+  if ( stackDepth == true ) {
+      p = 0x8000000000000000 - p;
+      if (p > fuzzer::stackDepthRecord) {
+          fuzzer::stackDepthRecord = p;
+          if (fuzzer::stackDepthBase == 0) {
+              fuzzer::stackDepthBase = p;
+          }
       }
   }
 }
